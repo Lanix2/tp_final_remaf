@@ -18,8 +18,40 @@ const client = new Client(connectionData)
 
 client.connect()
 
-cron.schedule('* * * * *', () => {
-  remaf()
+cron.schedule('* * * * * *', async () => {
+  const estaciones = await remaf()
+  //console.log(estaciones);
+  let existe = [{"id": 0} ,{"existe":false}]
+
+  estaciones.forEach(async e =>{      
+      const id = e.id
+      const weather_station = await client.query("SELECT * FROM weather_station")
+      console.log(weather_station.rows);
+      weather_station.rows.forEach(elem =>{
+        if(elem.id_weather_station == id){
+          existe.existe = true
+          existe.id =id
+        }
+      })
+  })
+  console.log(existe);
+  return false
+  //client.end()
+  if(existe){
+
+
+  }else{
+
+  }
+  
+  
+  console.log(weather_station.rows);
+
+
+
+  
+  
+
 });
 
 //pasar de location a puntos
@@ -78,7 +110,11 @@ app.listen(port, () => {
 
   
 const remaf = async () => {
-  const response = await fetch('https://api-remaf.onrender.com/api');
+  const general = "https://api-remaf.onrender.com/api"
+  const fecha = "https://api-remaf.onrender.com/api/1/'2022-10-26'"
+  const fecha_hasta = "https://api-remaf.onrender.com/api/2/'2022-10-01'/'2022-11-30'"
+  
+  const response = await fetch(general);
   const body = await response.json()
   console.log(body)
   return body
