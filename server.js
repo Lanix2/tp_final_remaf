@@ -17,32 +17,54 @@ const connectionData = {
 const client = new Client(connectionData)
 
 client.connect()
+let cont = 0
 
-cron.schedule('* * * * * *', async () => {
+cron.schedule('5 * * * * *', async () => {
+  cont++
+  console.log("conectando " +cont)
   const estaciones = await remaf()
   //console.log(estaciones);
-  let existe = [{"id": 0} ,{"existe":false}]
+  console.log("cargando datos");
 
-  estaciones.forEach(async e =>{      
+  estaciones.forEach(async e =>{    
+      let existe = [{"id": 0} ,{"existe":false}, {"datos": 0}]  
       const id = e.id
       const weather_station = await client.query("SELECT * FROM weather_station")
-      console.log(weather_station.rows);
+      //console.log(weather_station.rows);
       weather_station.rows.forEach(elem =>{
         if(elem.id_weather_station == id){
           existe.existe = true
           existe.id =id
+          existe.datos = e
         }
       })
+      
+      const {precipitacion, humedad, temperatura, direcc_viento, veloc_viento, localidad, nombre, latitud, longitud} = e
+      const fecha = new Date(e.fecha).toISOString().slice(0, 19).replace('T', ' ')
+
+      if(existe.existe){
+        await client.query(`UPDATE data_station
+        SET precipitacion=${precipitacion}, humedad=${humedad}, temperatura=${temperatura}, 
+        fecha='${fecha}', direcc_viento='${direcc_viento}', veloc_viento=${veloc_viento}, localidad='${localidad}'
+        WHERE fk_weather_station = ${existe.id}`)
+      }else{
+        const qr = `INSERT INTO weather_station(
+          id_weather_station, name, location)
+          VALUES (${e.id}, '${nombre}', 'POINT(${latitud} ${longitud})');
+          
+          INSERT INTO data_station(
+            precipitacion, humedad, temperatura, fk_weather_station, fecha, direcc_viento, veloc_viento, localidad)
+           VALUES ( ${precipitacion}, ${humedad}, ${temperatura}, ${e.id}, '${fecha}', '${direcc_viento}', ${veloc_viento}, '${localidad}');
+          
+          `
+        await client.query(qr)
+          
+      }
   })
   console.log(existe);
-  return false
+  //return false
   //client.end()
-  if(existe){
-
-
-  }else{
-
-  }
+  
   
   
   console.log(weather_station.rows);
